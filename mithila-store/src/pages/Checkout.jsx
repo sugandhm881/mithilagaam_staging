@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 
 export default function Checkout({ cart, setCart, showToast }) {
+    useEffect(() => {
+    document.title = "Secure Checkout | Mithila Gaam";
+  }, []);
   const navigate = useNavigate();
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 

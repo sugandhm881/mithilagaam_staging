@@ -1,4 +1,8 @@
+import { useEffect } from 'react';
 export default function Contact({ showToast }) {
+    useEffect(() => {
+    document.title = "Contact Us | Mithila Gaam";
+  }, []);
   const handleSubmit = (e) => {
     e.preventDefault();
     // In a real app, you would send this to a backend route or Formspree

@@ -2,12 +2,21 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 export default function Product({ products, addToCart, loading }) {
+  // 1. First, get the ID and find the product logic
   const { id } = useParams();
   const navigate = useNavigate();
+  const product = products.find(p => p.id === Number(id));
+
+  // 2. Now define the state
   const [activeImage, setActiveImage] = useState('');
   const [qty, setQty] = useState(1);
 
-  const product = products.find(p => p.id === Number(id));
+  // 3. Now the Effects can safely access 'product'
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.name} | Mithila Gaam`;
+    }
+  }, [product]);
 
   useEffect(() => {
     if (product && !activeImage) {
@@ -150,7 +159,6 @@ export default function Product({ products, addToCart, loading }) {
               {product.price.toLocaleString('en-IN')}
             </p>
 
-            {/* UI UPGRADE: Refined Stock Indicators */}
             <div className="mb-10">
               {isOutOfStock ? (
                 <span className="inline-flex items-center gap-3 bg-red-50/80 text-red-700 px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-100">
@@ -168,7 +176,6 @@ export default function Product({ products, addToCart, loading }) {
               )}
             </div>
 
-            {/* UI UPGRADE: Luxury Narrative Block */}
             <div className="relative mb-12">
               <div className="absolute -left-4 top-0 text-6xl text-gray-200 font-serif leading-none opacity-50">"</div>
               <p className="text-gray-600 leading-loose text-lg font-medium relative z-10 pl-6 border-l-2 border-[#4A3B32]/20">
@@ -176,7 +183,6 @@ export default function Product({ products, addToCart, loading }) {
               </p>
             </div>
 
-            {/* UI UPGRADE: Premium Quantity & Add to Cart */}
             {!isOutOfStock ? (
               <div className="flex flex-col sm:flex-row gap-5 mb-6">
                 <div className="flex items-center border border-gray-300 rounded-xl bg-white shrink-0 shadow-sm h-16">
@@ -216,7 +222,6 @@ export default function Product({ products, addToCart, loading }) {
               </button>
             )}
 
-            {/* UI UPGRADE: Soft Health Benefits */}
             <div className="mt-8 pt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
               {healthBenefits.map((benefit, i) => (
                 <div key={i} className="flex items-center gap-4 group">
@@ -232,7 +237,6 @@ export default function Product({ products, addToCart, loading }) {
           </div>
         </div>
 
-        {/* UI UPGRADE: Refined Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-32 pt-24 border-t border-gray-200">
             <div className="text-center mb-16">
@@ -267,7 +271,6 @@ export default function Product({ products, addToCart, loading }) {
           </div>
         )}
 
-        {/* UI UPGRADE: Luxury Testimonials */}
         <div className="mt-32 pt-24 border-t border-gray-200 text-center">
           <h3 className="text-4xl font-serif text-[#2C2420] mb-4">The Mithila Heritage Experience</h3>
           <p className="text-[#8C7A6B] text-[10px] uppercase font-bold tracking-[0.3em] mb-20">Real stories from our community</p>

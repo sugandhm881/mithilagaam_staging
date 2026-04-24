@@ -1,6 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function Success() {
+    useEffect(() => {
+    document.title = "Order Confirmed | Mithila Gaam";
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const orderId = location.state?.orderId;

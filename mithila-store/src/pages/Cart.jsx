@@ -1,9 +1,13 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FREE_SHIPPING_THRESHOLD } from '../components/CartDrawer';
 
+
 export default function Cart({ cart, updateQuantity, removeFromCart }) {
+    useEffect(() => {
+    document.title = "Your Basket | Mithila Gaam";
+  }, []);
   const navigate = useNavigate();
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD - total);

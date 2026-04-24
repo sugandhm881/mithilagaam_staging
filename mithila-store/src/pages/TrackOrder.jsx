@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { API_URL } from '../config';
+import { useEffect } from 'react';
 
 export default function TrackOrder() {
+    useEffect(() => {
+    document.title = "Track Your Order | Mithila Gaam";
+  }, []);
   const [orderId, setOrderId] = useState('');
   const [phone, setPhone] = useState('');
   const [orderData, setOrderData] = useState(null);

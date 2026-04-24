@@ -1,4 +1,8 @@
+import { useEffect } from 'react';
 export default function About() {
+    useEffect(() => {
+    document.title = "Our Heritage | Mithila Gaam";
+  }, []);
   return (
     <main className="bg-[#F9F8F4] selection:bg-[#4A3B32] selection:text-white pb-20">
       
@@ -9,7 +13,7 @@ export default function About() {
         <div className="absolute bottom-[-20%] right-[10%] w-96 h-96 bg-[#4A3B32]/5 rounded-full blur-3xl"></div>
         
         <div className="relative z-10 animate-fade-in-up">
-          <div className="w-16 h-[2px] bg-[#8C7A6B] mx-auto mb-8"></div>
+          <div className="w-16 h-0.5 bg-[#8C7A6B] mx-auto mb-8"></div>
           <h1 className="text-5xl md:text-7xl font-serif text-[#2C2420] mb-6 tracking-tight">Our Heritage</h1>
           <p className="text-[#8C7A6B] uppercase tracking-[0.3em] text-xs font-bold">From the Ponds of Bihar to Your Pantry</p>
         </div>

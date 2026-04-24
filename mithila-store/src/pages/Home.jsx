@@ -1,6 +1,14 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react'; // Added this import
+
 
 export default function Home({ addToCart, products, loading }) {
+  
+  // Logic to set the browser tab title
+  useEffect(() => {
+    document.title = "Mithila Gaam - Authentic Taste Of Mithila";
+  }, []);
+
   return (
     <main className="overflow-x-hidden bg-[#F9F8F4] selection:bg-[#4A3B32] selection:text-white">
       
