@@ -1,0 +1,9 @@
+# This creates a file named .gitignore with the correct rules
+@"
+node_modules/
+.env
+mithila-store/node_modules/
+mithila-store/dist/
+mithila-store/build/
+.DS_Store
+"@ | Out-File -FilePath .gitignore -Encoding utf8
