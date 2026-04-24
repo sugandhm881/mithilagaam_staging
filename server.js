@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const sharp = require('sharp');
 const { z } = require('zod');
 const { createClient } = require('@supabase/supabase-js');
+const path = require('path'); // Added for production serving
 
 const app = express();
 
@@ -146,7 +147,6 @@ app.post('/api/admin/login', loginLimiter, validate(loginSchema), async (req, re
 });
 
 // --- IMAGE UPLOAD HELPER (with sharp compression) ---
-// Returns a public URL string on success, or null on any failure (with details logged).
 async function uploadImage(base64Str) {
     if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image')) {
         return null;
@@ -346,13 +346,12 @@ app.patch('/api/admin/orders/:id', requireAdmin, validate(orderUpdateSchema), as
 
 app.post('/api/admin/products', requireAdmin, validate(productSchema), async (req, res) => {
     try {
-        // Seed image_url only if it's a real URL; never let a data URI leak into the DB.
         let mainImgUrl = isValidHttpUrl(req.body.image_url) ? req.body.image_url : null;
 
         if (req.body.image_base64) {
             const uploadedUrl = await uploadImage(req.body.image_base64);
             if (!uploadedUrl) {
-                return res.status(502).json({ message: 'Main image upload failed. Verify the Supabase "products" bucket exists and is public.' });
+                return res.status(502).json({ message: 'Main image upload failed.' });
             }
             mainImgUrl = uploadedUrl;
         }
@@ -390,27 +389,25 @@ app.post('/api/admin/products', requireAdmin, validate(productSchema), async (re
         res.status(201).json({ data, galleryFailures });
     } catch (err) {
         console.error('Product Creation Error:', err.message);
-        res.status(500).json({ message: 'Failed to publish new product SKU: ' + err.message });
+        res.status(500).json({ message: 'Failed to publish new product SKU.' });
     }
 });
 
 app.put('/api/admin/products/:id', requireAdmin, validate(productSchema), async (req, res) => {
     const { id } = req.params;
     try {
-        // Only keep image_url if it's a real http(s) URL; never persist data URIs.
         let mainImgUrl = isValidHttpUrl(req.body.image_url) ? req.body.image_url : null;
 
         if (req.body.image_base64) {
             const uploadedUrl = await uploadImage(req.body.image_base64);
             if (!uploadedUrl) {
-                return res.status(502).json({ message: 'Main image upload failed. Verify the Supabase "products" bucket exists and is public.' });
+                return res.status(502).json({ message: 'Main image upload failed.' });
             }
             mainImgUrl = uploadedUrl;
         }
 
         if (!mainImgUrl) mainImgUrl = 'https://via.placeholder.com/400';
 
-        // Existing gallery: keep only valid URLs (drop any stray data URIs).
         const existingGallery = req.body.image_gallery.filter(isValidHttpUrl);
         const finalGalleryUrls = [...existingGallery];
         let galleryFailures = 0;
@@ -443,7 +440,7 @@ app.put('/api/admin/products/:id', requireAdmin, validate(productSchema), async 
         res.status(200).json({ message: 'Product synchronized successfully.', galleryFailures });
     } catch (err) {
         console.error('Product Update Error:', err.message);
-        res.status(500).json({ message: 'Failed to update product details: ' + err.message });
+        res.status(500).json({ message: 'Failed to update product details.' });
     }
 });
 
@@ -461,11 +458,20 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
     }
 });
 
-// --- SYSTEM ---
-app.get('/', (req, res) => {
-    res.send('Mithila Heritage Food Pvt Ltd API - Authentic Taste Of Mithila');
+// ==========================================
+// PRODUCTION FRONTEND SERVING
+// ==========================================
+
+// 1. Serve the static files from the React app
+app.use(express.static(path.join(__dirname, 'mithila-store/dist')));
+
+// 2. Handle React Routing (The "Catch-all")
+// This sends the main index.html for any route that is NOT an API route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'mithila-store/dist/index.html'));
 });
 
+// --- SYSTEM ---
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log('--------------------------------------------------------');
