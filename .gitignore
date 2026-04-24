@@ -8,3 +8,4 @@ mithila-store/build/
 "@ | Out-File -FilePath .gitignore -Encoding utf8
 .env.production
 mithila-store/.env.production
+node_modules
