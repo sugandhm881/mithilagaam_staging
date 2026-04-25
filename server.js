@@ -462,13 +462,26 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
 // PRODUCTION FRONTEND SERVING
 // ==========================================
 
-// 1. Serve the static files from the React app
-app.use(express.static(path.join(__dirname, 'mithila-store/dist')));
+// Define the path once to avoid errors
+const buildPath = path.join(__dirname, 'mithila-store', 'dist');
 
-// 2. Handle React Routing (The "Catch-all")
-// This sends the main index.html for any route that is NOT an API route
+// 1. Serve the static files (CSS, JS, Images)
+app.use(express.static(buildPath));
+
+// 2. API 404 PROTECTOR (CRITICAL FIX)
+// This ensures that if an API call fails, it sends JSON, not the HTML website.
+// This stops the "Unexpected token <" error.
+app.use('/api', (req, res) => {
+    res.status(404).json({ 
+        message: "API route not found", 
+        path: req.originalUrl 
+    });
+});
+
+// 3. Handle React Routing (The Catch-all)
+// This MUST be the very last route.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'mithila-store/dist/index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 // --- SYSTEM ---
