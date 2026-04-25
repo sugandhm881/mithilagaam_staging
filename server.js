@@ -464,20 +464,23 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
 
 const buildPath = path.join(__dirname, 'mithila-store', 'dist');
 
-// 1. Serve static files (assets, JS, CSS)
+// 1. Serve the static files (CSS, JS, Images)
 app.use(express.static(buildPath));
 
-// 2. PROTECT API ROUTES: This ensures /api calls never get the index.html file.
+// 2. THE FIX: API Guard
+// In Express, using just '/api' as the path implicitly handles everything under it,
+// bypassing the strict path-to-regexp parser errors entirely.
 app.use('/api', (req, res) => {
     res.status(404).json({ 
-        message: "API Route not found", 
+        message: "API endpoint not found. Your request reached the server but didn't match a route.", 
         path: req.originalUrl 
     });
 });
 
-// 3. FINAL CATCH-ALL: serves index.html for non-/api paths.
-// Regex form is required on Express 5 / path-to-regexp v8, where '*' is no longer a valid route pattern.
-app.get(/^(?!\/api).+/, (req, res) => {
+// 3. THE FIX: Catch-all Route
+// Using a native Regular Expression (/.*/) bypasses the path parser completely,
+// preventing Node v24 crashes while still effectively catching all React routes.
+app.get(/.*/, (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
 });
 
