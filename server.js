@@ -13,7 +13,7 @@ const app = express();
 
 // --- MIDDLEWARE ---
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // --- CONFIG ---
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -146,34 +146,51 @@ app.post('/api/admin/login', loginLimiter, validate(loginSchema), async (req, re
     res.status(200).json({ token, expiresIn: JWT_EXPIRY });
 });
 
-// --- IMAGE UPLOAD HELPER (with sharp compression) ---
+// --- IMAGE UPLOAD HELPER ---
+// Tries sharp (resize + WebP). If sharp can't handle the input (HEIC from iPad,
+// missing libvips on shared host, OOM, etc.) we still upload the original bytes
+// so the admin's product save never fails just because compression couldn't run.
+const extFromMime = (m) => {
+    const map = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/heic': 'heic', 'image/heif': 'heif' };
+    return map[m?.toLowerCase()] || 'bin';
+};
+
 async function uploadImage(base64Str) {
     if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:image')) {
         return null;
     }
 
-    const matches = base64Str.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const matches = base64Str.match(/^data:([A-Za-z-+\/.]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
         return null;
     }
 
-    try {
-        const rawBuffer = Buffer.from(matches[2], 'base64');
+    const sourceMime = matches[1];
+    const rawBuffer = Buffer.from(matches[2], 'base64');
 
-        const optimized = await sharp(rawBuffer)
+    let uploadBuffer = null;
+    let contentType = sourceMime;
+    let extension = extFromMime(sourceMime);
+
+    try {
+        uploadBuffer = await sharp(rawBuffer)
             .rotate()
             .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 82 })
             .toBuffer();
+        contentType = 'image/webp';
+        extension = 'webp';
+    } catch (err) {
+        console.error('uploadImage: sharp failed, falling back to raw upload:', err.message);
+        uploadBuffer = rawBuffer;
+    }
 
-        const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 100000)}.webp`;
+    const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 100000)}.${extension}`;
 
+    try {
         const { error: storageError } = await supabase.storage
             .from('products')
-            .upload(fileName, optimized, {
-                contentType: 'image/webp',
-                upsert: false
-            });
+            .upload(fileName, uploadBuffer, { contentType, upsert: false });
 
         if (storageError) {
             console.error('uploadImage: Supabase Storage error:', storageError.message || storageError);
@@ -183,7 +200,7 @@ async function uploadImage(base64Str) {
         const { data: urlData } = supabase.storage.from('products').getPublicUrl(fileName);
         return urlData?.publicUrl || null;
     } catch (err) {
-        console.error('uploadImage: processing failed:', err.message);
+        console.error('uploadImage: storage upload failed:', err.message);
         return null;
     }
 }
