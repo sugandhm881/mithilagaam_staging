@@ -462,25 +462,22 @@ app.delete('/api/admin/products/:id', requireAdmin, async (req, res) => {
 // PRODUCTION FRONTEND SERVING
 // ==========================================
 
-// Define the path once to avoid errors
 const buildPath = path.join(__dirname, 'mithila-store', 'dist');
 
-// 1. Serve the static files (CSS, JS, Images)
+// 1. Serve static files (assets, JS, CSS)
 app.use(express.static(buildPath));
 
-// 2. API 404 PROTECTOR (CRITICAL FIX)
-// This ensures that if an API call fails, it sends JSON, not the HTML website.
-// This stops the "Unexpected token <" error.
+// 2. PROTECT API ROUTES: This ensures /api calls never get the index.html file.
 app.use('/api', (req, res) => {
     res.status(404).json({ 
-        message: "API route not found", 
+        message: "API Route not found", 
         path: req.originalUrl 
     });
 });
 
-// 3. Handle React Routing (The Catch-all)
-// This MUST be the very last route.
-app.get('*', (req, res) => {
+// 3. FINAL CATCH-ALL: serves index.html for non-/api paths.
+// Regex form is required on Express 5 / path-to-regexp v8, where '*' is no longer a valid route pattern.
+app.get(/^(?!\/api).+/, (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
 });
 
