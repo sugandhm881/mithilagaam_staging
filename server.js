@@ -222,16 +222,27 @@ app.get('/api/orders/track', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('orders')
-            .select('order_id, first_name, status, tracking_url, total_amount, created_at')
+            .select('*')
             .eq('order_id', Number(id))
             .eq('phone', phone)
-            .single();
+            .maybeSingle();
 
-        if (error || !data) {
+        if (error) {
+            console.error('Tracking query error:', error.message || error);
+            return res.status(500).json({ message: 'Tracking service is temporarily unavailable.' });
+        }
+        if (!data) {
             return res.status(404).json({ message: 'Order not found. Please verify your details.' });
         }
 
-        res.status(200).json(data);
+        res.status(200).json({
+            order_id: data.order_id,
+            first_name: data.first_name,
+            status: data.status,
+            tracking_url: data.tracking_url ?? null,
+            total_amount: data.total_amount,
+            created_at: data.created_at
+        });
     } catch (err) {
         console.error('Tracking Error:', err.message);
         res.status(500).json({ message: 'Tracking service is temporarily unavailable.' });

@@ -13,6 +13,7 @@ export default function Checkout({ cart, setCart, showToast }) {
   const [showUPI, setShowUPI] = useState(false);
   const [utr, setUtr] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
   // FIX: Flag to prevent the "empty cart" redirect from stealing the route
   const [orderSuccess, setOrderSuccess] = useState(false);
   
@@ -33,18 +34,23 @@ export default function Checkout({ cart, setCart, showToast }) {
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handlePincode = async (e) => {
-    const pin = e.target.value;
-    setFormData(prev => ({ ...prev, pincode: pin }));
-    if (pin.length === 6) {
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-        const data = await res.json();
-        if (data[0].Status === "Success") {
-          const postOffice = data[0].PostOffice[0];
-          setFormData(prev => ({ ...prev, city: postOffice.District, state: postOffice.State }));
-          showToast("Location auto-filled successfully!");
-        }
-      } catch (err) { console.error(err); }
+    const pin = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setFormData(prev => ({ ...prev, pincode: pin, city: '', state: '' }));
+    if (pin.length !== 6) return;
+
+    setPincodeLoading(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+      const entry = Array.isArray(data) ? data[0] : null;
+      const po = entry?.PostOffice?.[0];
+      if (entry?.Status === "Success" && po) {
+        setFormData(prev => ({ ...prev, city: po.District, state: po.State }));
+      }
+    } catch (err) {
+      console.error("Pincode lookup failed:", err);
+    } finally {
+      setPincodeLoading(false);
     }
   };
 
@@ -114,10 +120,15 @@ export default function Checkout({ cart, setCart, showToast }) {
                 
                 <div className="border-t border-gray-100 pt-8 mt-4">
                   <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#8C7A6B] mb-6">Delivery Address</h3>
-                  <div><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Pincode</label><input name="pincode" maxLength="6" required value={formData.pincode} onChange={handlePincode} className={inputClass} placeholder="6 Digits" /></div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">
+                      Pincode {pincodeLoading && <span className="text-[#4A3B32] normal-case tracking-normal ml-2">looking up…</span>}
+                    </label>
+                    <input name="pincode" inputMode="numeric" maxLength="6" required value={formData.pincode} onChange={handlePincode} className={inputClass} placeholder="6 Digits" />
+                  </div>
                   <div className="grid grid-cols-2 gap-6 mt-6">
-                    <div><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">City</label><input name="city" required readOnly value={formData.city} className="w-full border border-gray-200 p-4 rounded-xl bg-gray-100 text-gray-500 shadow-inner cursor-not-allowed text-sm font-bold outline-none" /></div>
-                    <div><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">State</label><input name="state" required readOnly value={formData.state} className="w-full border border-gray-200 p-4 rounded-xl bg-gray-100 text-gray-500 shadow-inner cursor-not-allowed text-sm font-bold outline-none" /></div>
+                    <div><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">City</label><input name="city" required value={formData.city} onChange={handleInputChange} className={inputClass} placeholder="City" /></div>
+                    <div><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">State</label><input name="state" required value={formData.state} onChange={handleInputChange} className={inputClass} placeholder="State" /></div>
                   </div>
                   <div className="mt-6"><label className="block text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Street Address / House No.</label><textarea name="street" required rows="2" value={formData.street} onChange={handleInputChange} className={`${inputClass} resize-none`} placeholder="Detailed address..."></textarea></div>
                 </div>
