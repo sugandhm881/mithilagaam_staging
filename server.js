@@ -372,6 +372,12 @@ app.patch('/api/admin/orders/:id', requireAdmin, validate(orderUpdateSchema), as
     }
 });
 
+const slugify = (s) => String(s || 'product')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'product';
+
 app.post('/api/admin/products', requireAdmin, validate(productSchema), async (req, res) => {
     try {
         let mainImgUrl = isValidHttpUrl(req.body.image_url) ? req.body.image_url : null;
@@ -398,9 +404,12 @@ app.post('/api/admin/products', requireAdmin, validate(productSchema), async (re
             ? req.body.benefits
             : String(req.body.benefits || '').split(',').map(b => b.trim()).filter(Boolean);
 
+        const generatedSku = `MG-${slugify(req.body.name)}-${Date.now().toString(36)}`;
+
         const { data, error } = await supabase
             .from('products')
             .insert([{
+                sku: generatedSku,
                 name: req.body.name,
                 price: Number(req.body.price),
                 description: req.body.description,
